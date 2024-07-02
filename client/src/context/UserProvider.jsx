@@ -16,19 +16,13 @@ export default function UserProvider(props) {
     user: JSON.parse(localStorage.getItem("user")) || {},
     token: localStorage.getItem("token") || "",
     issues: [],
+    errMsg: "",
   };
 
   const [userState, setUserState] = useState(initState);
 
-  const [publicState, setPublicState] = useState([]);
+  const [publicIssues, setPublicIssues] = useState([]);
 
-  async function resetUserState() {
-    setUserState(initState);
-  }
-
-  function resetPublicState() {
-    setPublicState([]);
-  }
   async function signup(creds) {
     try {
       const res = await axios.post("/auth/signup", creds);
@@ -43,7 +37,7 @@ export default function UserProvider(props) {
         };
       });
     } catch (error) {
-      console.log(error);
+      handleAuthError(error.response.data.errMsg);
     }
   }
 
@@ -59,7 +53,7 @@ export default function UserProvider(props) {
         token: token,
       }));
     } catch (error) {
-      console.log(error);
+      handleAuthError(error.response.data.errMsg);
     }
   }
 
@@ -79,8 +73,27 @@ export default function UserProvider(props) {
     }
   }
 
+  function handleAuthError(errMsg) {
+    setUserState((prevUserState) => {
+      //   console.log(errMsg);
+      return {
+        ...prevUserState,
+        errMsg,
+      };
+    });
+  }
+
+  function resetAuthErr() {
+    setUserState((prevUserState) => {
+      return {
+        ...prevUserState,
+        errMsg: "",
+      };
+    });
+  }
+
   async function getUserIssues() {
-    resetPublicState();
+    // resetPublicState();
     try {
       const res = await userAxios.get("/api/issue/user");
       setUserState((prevState) => {
@@ -97,12 +110,7 @@ export default function UserProvider(props) {
   async function getIssues() {
     try {
       const res = await userAxios.get("/api/issue");
-      setPublicState((prevState) => {
-        return {
-          ...prevState,
-          issues: res.data,
-        };
-      });
+      setPublicIssues(res.data);
     } catch (error) {
       console.log(error);
     }
@@ -122,25 +130,90 @@ export default function UserProvider(props) {
     }
   }
 
-  console.log(userState.user);
+  //   async function handleUpvote(issueId) {
+  //     try {
+  //       const res = await userAxios.put(`/api/issue/${issueId}/upvote`);
+  //       console.log(res);
+  //       //   const { upvotes } = res.data;
+  //       setPublicIssues((prevPublicIssues) =>
+  //         prevPublicIssues.map((issue) =>
+  //           issueId === issue._id ? res.data : issue
+  //         );
+  //         setUserState((prevUserState) => {
+  //             return {
+  //                 ...prevUserState
+  //                 issues: prevUserState.issues.map((issue) => issue._id === issueId ? res.data : issue)
+  //             }
+  //         })
+  //       );
+  //       // const issue = prevUserState.issues.find(iss => issueId === iss._id);
+  //       // issue.upvotes = res.data.upvotes;
+  //     } catch (error) {
+  //       console.log(error);
+  //     }
+  //   }
+  async function handleUpvote(issueId) {
+    try {
+      const res = await userAxios.put(`/api/issue/${issueId}/upvote`);
+      console.log(res);
+      setPublicIssues((prevPublicIssues) =>
+        prevPublicIssues.map((issue) =>
+          issueId === issue._id ? res.data : issue
+        )
+      );
+      setUserState((prevUserState) => {
+        return {
+          ...prevUserState,
+          issues: prevUserState.issues.map((issue) =>
+            issue._id === issueId ? res.data : issue
+          ),
+        };
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+  async function handleDownvote(issueId) {
+    try {
+      const res = await userAxios.put(`/api/issue/${issueId}/downvote`);
+      console.log(res);
+      setPublicIssues((prevPublicIssues) =>
+        prevPublicIssues.map((issue) =>
+          issueId === issue._id ? res.data : issue
+        )
+      );
+      setUserState((prevUserState) => {
+        return {
+          ...prevUserState,
+          issues: prevUserState.issues.map((issue) =>
+            issue._id === issueId ? res.data : issue
+          ),
+        };
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  const value = {
+    ...userState,
+    signup,
+    login,
+    logout,
+    getUserIssues,
+    addIssue,
+    getIssues,
+    handleAuthError,
+    resetAuthErr,
+    handleUpvote,
+    handleDownvote,
+    // resetUserState,
+    // setUserState,
+    // resetPublicState,
+    publicIssues,
+  };
 
   return (
-    <UserContext.Provider
-      value={{
-        ...userState,
-        signup,
-        login,
-        logout,
-        getUserIssues,
-        addIssue,
-        getIssues,
-        resetUserState,
-        setUserState,
-        resetPublicState,
-        ...publicState,
-      }}
-    >
-      {props.children}
-    </UserContext.Provider>
+    <UserContext.Provider value={value}>{props.children}</UserContext.Provider>
   );
 }

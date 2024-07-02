@@ -13,9 +13,8 @@ authRouter.post("/signup", (req, res, next) => {
   User.findOne({ username })
     .then((existingUser) => {
       if (existingUser) {
-        return res
-          .status(409)
-          .json({ error: "That username is already taken." });
+        res.status(409);
+        return next(new Error("That username is already taken."));
       }
 
       const newUser = new User({ username, password });

@@ -3,7 +3,7 @@ import { UserContext } from "../context/UserProvider";
 import IssuesList from "./IssuesList";
 
 function Public() {
-  const { getIssues, issues } = useContext(UserContext);
+  const { getIssues, publicIssues } = useContext(UserContext);
 
   useEffect(() => {
     getIssues();
@@ -11,7 +11,7 @@ function Public() {
 
   return (
     <>
-      <IssuesList issues={issues} />
+      <IssuesList issues={publicIssues} />
     </>
   );
 }
